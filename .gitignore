@@ -1,3 +1,4 @@
 ﻿.DS_Store
 node_modules/
-*.json
+package-lock.json
+*List.json

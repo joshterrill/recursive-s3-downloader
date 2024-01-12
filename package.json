@@ -1,0 +1,35 @@
+{
+  "name": "recursive-s3-downloader",
+  "version": "0.0.1",
+  "description": "takes an open s3 root URL as an argument, loops through all available directories and files, exports them, and then downloads the files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "recursive-s3-downloader": "./bin/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshterrill/recursive-s3-downloader.git"
+  },
+  "keywords": [
+    "s3",
+    "s3",
+    "downloader",
+    "recursive",
+    "downloader",
+    "s3",
+    "scraper"
+  ],
+  "author": "Josh Terrill",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joshterrill/recursive-s3-downloader/issues"
+  },
+  "homepage": "https://github.com/joshterrill/recursive-s3-downloader#readme",
+  "dependencies": {
+    "axios": "^1.6.5",
+    "xml2js": "^0.6.2"
+  }
+}

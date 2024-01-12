@@ -2,7 +2,6 @@
 const xml2js = require('xml2js');
 const fs = require('fs');
 
-
 async function download(rootUrl) {
     if (rootUrl[rootUrl.length - 1] === '/') {
         rootUrl = rootUrl.substring(0, rootUrl.length - 1);
