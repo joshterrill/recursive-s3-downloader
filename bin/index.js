@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
 const { download } = require('../');
 const args = process.argv.slice(2);

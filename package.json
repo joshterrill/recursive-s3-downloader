@@ -1,6 +1,6 @@
 {
   "name": "recursive-s3-downloader",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "takes an open s3 root URL as an argument, loops through all available directories and files, exports them, and then downloads the files",
   "main": "index.js",
   "scripts": {
@@ -33,3 +33,4 @@
     "xml2js": "^0.6.2"
   }
 }
+
