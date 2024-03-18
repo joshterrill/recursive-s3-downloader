@@ -1,17 +1,37 @@
 const axios = require('axios');
 const xml2js = require('xml2js');
 const fs = require('fs');
+const url = require('url');
 
-async function download(rootUrl) {
-    if (rootUrl[rootUrl.length - 1] === '/') {
-        rootUrl = rootUrl.substring(0, rootUrl.length - 1);
+async function download(inputUrl, skipDownload = false, additionalPrefixes = [], downloadOnly = false) {
+    const parsedUrl = new URL(inputUrl);
+    const rootUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    const bucketName = parsedUrl.pathname.substring(1); // Remove the leading slash
+    const prefix = parsedUrl.searchParams.get('prefix') || ''; // Extract prefix if exists
+    const masterFileListName = bucketName ? `${bucketName}-masterFileList.json` : `${rootUrl.replace(/[^a-zA-Z0-9]/g, '')}-masterFileList.json`;
+    if (downloadOnly && fs.existsSync(`./${masterFileListName}`)) {
+        console.log('========= Download Only Invoked, Downloading Files =========');
+        const masterFileList = JSON.parse(fs.readFileSync(`./${masterFileListName}`));
+        await downloadFileList(rootUrl, masterFileList);
+        return;
     }
-    const bucketName = rootUrl.substring(rootUrl.lastIndexOf('/') + 1);
-    const dirs = await getDirList(rootUrl, bucketName);
+    const dirs = await getDirList(rootUrl, bucketName, prefix);
     const files = await getMasterFileList(rootUrl, bucketName, dirs);
-    
-    await downloadFileList(rootUrl, files);
+    if (!skipDownload) {
+        await downloadFileList(rootUrl, files);
+    }
+
+    // Process additional prefixes
+    for (const additionalPrefix of additionalPrefixes) {
+        console.log(`Processing additional prefix: ${additionalPrefix}`);
+        const additionalDirs = await getDirList(rootUrl, bucketName, additionalPrefix);
+        const additionalFiles = await getMasterFileList(rootUrl, bucketName, additionalDirs);
+        if (!skipDownload) {
+            await downloadFileList(rootUrl, additionalFiles);
+        }
+    }
 }
+
 
 async function downloadFileList(rootUrl, masterFileList) {
     console.log('========= Downloading files =========');
@@ -28,7 +48,6 @@ async function downloadFileList(rootUrl, masterFileList) {
         } catch (error) {
             // do nothing
         }
-
     }
 }
 
@@ -37,28 +56,38 @@ async function getMasterFileList(rootUrl, bucketName, masterDirList) {
     const masterFileList = [];
     for (const dir of masterDirList) {
         try {
-            const fileUrl = `${rootUrl}/?prefix=${dir}`;
+            const fileUrl = `${rootUrl}${bucketName === '' ? '' : `${bucketName}/`}/?prefix=${dir}`;
             const files = await getFileListForDir(fileUrl);
             for (const f of files) {
                 if (!masterFileList.includes(f)) {
                     masterFileList.push(f);
                 }
-            } 
-            
+            }
         } catch (error) {
             // do nothing
         }
     }
-    fs.writeFileSync(`./${bucketName}-masterFileList.json`, JSON.stringify(masterFileList));
+    const fileName = bucketName ? `${bucketName}-masterFileList.json` : `${rootUrl.replace(/[^a-zA-Z0-9]/g, '')}-masterFileList.json`;
+    if (fs.existsSync(`./${fileName}`)) {
+        console.log('File already exists in getMasterFileList, going to start appending');
+        const oldMasterFileList = JSON.parse(fs.readFileSync(`./${fileName}`));
+        for (const file of oldMasterFileList) {
+            if (!masterFileList.includes(file)) {
+                masterFileList.push(file);
+            }
+        }
+    }
+    fs.writeFileSync(`./${fileName}`, JSON.stringify(masterFileList));
     return masterFileList;
 }
 
-async function getDirList(rootUrl, bucketName) {
+async function getDirList(rootUrl, bucketName, prefix) {
     console.log('========= Looping over dirs =========');
-    const masterDirList = await getDirsRecursive(rootUrl);
+    const startUrl = `${rootUrl}${bucketName === '' ? '' : `${bucketName}/`}/?prefix=${prefix}`;
+    const masterDirList = await getDirsRecursive(startUrl);
     for (const dir of masterDirList) {
         try {
-            const newurl = `${rootUrl}/?prefix=${dir}`;
+            const newurl = `${rootUrl}${bucketName === '' ? '' : `${bucketName}/`}/?prefix=${dir}`;
             const newDirs = await getDirsRecursive(newurl);
             for (const d of newDirs) {
                 if (!masterDirList.includes(d)) {
@@ -66,11 +95,21 @@ async function getDirList(rootUrl, bucketName) {
                 }
             }
         } catch (error) {
-            // do nothing
+            // Handle error
         }
-        
     }
-    fs.writeFileSync(`./${bucketName}-masterDirList.json`, JSON.stringify(masterDirList));
+    
+    const fileName = bucketName ? `${bucketName}-masterDirList.json` : `${rootUrl.replace(/[^a-zA-Z0-9]/g, '')}-masterDirList.json`;
+    if (fs.existsSync(`./${fileName}`)) {
+        console.log('File already exists in getDirList, going to start appending');
+        const oldMasterDirList = JSON.parse(fs.readFileSync(`./${fileName}`));
+        for (const dir of oldMasterDirList) {
+            if (!masterDirList.includes(dir)) {
+                masterDirList.push(dir);
+            }
+        }
+    }
+    fs.writeFileSync(`./${fileName}`, JSON.stringify(masterDirList));
     return masterDirList;
 }
 
