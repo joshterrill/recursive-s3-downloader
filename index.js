@@ -128,7 +128,7 @@ async function getFileListForDir(url) {
                 }
             }
         } else {
-            reject(null);
+            reject('Error: response status not 200');
         }
         resolve(files);
     });
@@ -155,6 +155,8 @@ async function getDirsRecursive(url) {
                 
             }
             resolve(dirs);
+        } else {
+            reject('Error: response status not 200');
         }
     });
 }
